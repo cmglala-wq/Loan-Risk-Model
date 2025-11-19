@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyBambu Cash-Flow Risk Assessment Model</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --low-risk: #10b981;
+            --moderate-risk: #f59e0b;
+            --elevated-risk: #f97316;
+            --high-risk: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--primary);
+            color: white;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .sidebar-header p {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .nav-section {
+            padding: 1rem 0;
+        }
+
+        .nav-section-title {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-light);
+            letter-spacing: 0.05em;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.6rem 1.5rem;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: var(--bg);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: #eff6ff;
+            color: var(--primary);
+            border-left-color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Main content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            max-width: 1200px;
+        }
+
+        /* Mobile menu toggle */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1001;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Cards and sections */
+        .section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+            color: var(--text);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section h3 {
+            font-size: 1.2rem;
+            margin: 1.25rem 0 0.75rem;
+            color: var(--text);
+        }
+
+        .section h4 {
+            font-size: 1rem;
+            margin: 1rem 0 0.5rem;
+            color: var(--text-light);
+        }
+
+        .section p {
+            margin-bottom: 1rem;
+        }
+
+        /* Score bands */
+        .score-bands {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .score-band {
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .score-band.low-risk {
+            background: #d1fae5;
+            border: 2px solid var(--low-risk);
+        }
+
+        .score-band.moderate-risk {
+            background: #fef3c7;
+            border: 2px solid var(--moderate-risk);
+        }
+
+        .score-band.elevated-risk {
+            background: #ffedd5;
+            border: 2px solid var(--elevated-risk);
+        }
+
+        .score-band.high-risk {
+            background: #fee2e2;
+            border: 2px solid var(--high-risk);
+        }
+
+        .score-band .range {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .score-band .label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0.25rem 0;
+        }
+
+        .score-band .action {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        tr:hover {
+            background: var(--bg);
+        }
+
+        /* Risk badges */
+        .risk-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .risk-badge.low { background: #d1fae5; color: #065f46; }
+        .risk-badge.moderate { background: #fef3c7; color: #92400e; }
+        .risk-badge.elevated { background: #ffedd5; color: #9a3412; }
+        .risk-badge.high { background: #fee2e2; color: #991b1b; }
+
+        /* Collapsible sections */
+        .collapsible {
+            background: var(--bg);
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .collapsible-header {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .collapsible-header:hover {
+            background: #e2e8f0;
+        }
+
+        .collapsible-header::after {
+            content: '+';
+            font-size: 1.25rem;
+            font-weight: 400;
+        }
+
+        .collapsible.open .collapsible-header::after {
+            content: '−';
+        }
+
+        .collapsible-content {
+            display: none;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .collapsible.open .collapsible-content {
+            display: block;
+        }
+
+        /* Calculator */
+        .calculator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            color: white;
+        }
+
+        .calculator h3 {
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .calc-input {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calc-input label {
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .calc-input input {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .calc-input input:focus {
+            outline: 2px solid white;
+        }
+
+        .calc-result {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .calc-result .score {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+
+        .calc-result .verdict {
+            font-size: 1.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .calc-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        .calc-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Weight chart */
+        .weight-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        .weight-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .weight-label {
+            width: 180px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .weight-bar-container {
+            flex: 1;
+            height: 24px;
+            background: var(--bg);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .weight-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            transition: width 0.5s ease;
+        }
+
+        /* Code blocks */
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            margin: 1rem 0;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        /* Lists */
+        ul, ol {
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Red flag list */
+        .red-flags {
+            background: #fef2f2;
+            border-left: 4px solid var(--danger);
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        .red-flags h4 {
+            color: var(--danger);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Pattern cards */
+        .pattern-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .pattern-card h4 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+
+        /* Phase timeline */
+        .phase {
+            position: relative;
+            padding-left: 2rem;
+            padding-bottom: 2rem;
+            border-left: 2px solid var(--border);
+        }
+
+        .phase:last-child {
+            border-left: none;
+        }
+
+        .phase::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 0;
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .phase-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .phase-priority {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .phase-priority.high { background: #fee2e2; color: #991b1b; }
+        .phase-priority.medium { background: #fef3c7; color: #92400e; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .score-bands {
+                grid-template-columns: 1fr;
+            }
+
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .sidebar, .menu-toggle {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .section {
+                break-inside: avoid;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Checkmark list */
+        .check-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .check-list li {
+            position: relative;
+            padding-left: 1.75rem;
+        }
+
+        .check-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>MyBambu Risk Assessment</h2>
+            <p>Cash-Flow Credit Evaluation Framework</p>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Overview</div>
+            <a href="#executive-summary" class="nav-link">Executive Summary</a>
+            <a href="#calculator" class="nav-link">Score Calculator</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">6 Key Criteria</div>
+            <a href="#transaction-history" class="nav-link">1. Transaction History (20%)</a>
+            <a href="#parcel-affordability" class="nav-link">2. Parcel Affordability (25%)</a>
+            <a href="#debt" class="nav-link">3. Debt (20%)</a>
+            <a href="#employment" class="nav-link">4. Employment (15%)</a>
+            <a href="#behavior" class="nav-link">5. Behavior (10%)</a>
+            <a href="#bank-stability" class="nav-link">6. Bank Account Stability (10%)</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Decisioning</div>
+            <a href="#composite-score" class="nav-link">Composite Score</a>
+            <a href="#decision-rules" class="nav-link">Decision Rules</a>
+            <a href="#resubmission" class="nav-link">Resubmission Protocol</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analysis</div>
+            <a href="#insights" class="nav-link">Key Insights</a>
+            <a href="#patterns" class="nav-link">Red Flag Patterns</a>
+            <a href="#recommendations" class="nav-link">Recommendations</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Appendix</div>
+            <a href="#examples" class="nav-link">Scoring Examples</a>
+            <a href="#conclusion" class="nav-link">Conclusion</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Executive Summary -->
+        <section class="section" id="executive-summary">
+            <h1>Cash-Flow Risk Assessment Model</h1>
+            <p>This risk assessment model evaluates applicant creditworthiness through a cash-flow lens using 6 key criteria extracted from MyBambu's existing credit indicators. The model produces a composite risk score (0-100) where higher scores indicate lower risk, with automated decisioning thresholds for approval, manual review, and denial.</p>
+
+            <h2>Final Score Bands</h2>
+            <div class="score-bands">
+                <div class="score-band low-risk">
+                    <div class="range">70-100</div>
+                    <div class="label">Low Risk</div>
+                    <div class="action">→ Auto-Approve</div>
+                </div>
+                <div class="score-band moderate-risk">
+                    <div class="range">60-69.99</div>
+                    <div class="label">Moderate Risk</div>
+                    <div class="action">→ Manual Review</div>
+                </div>
+                <div class="score-band elevated-risk">
+                    <div class="range">50-59.99</div>
+                    <div class="label">Elevated Risk</div>
+                    <div class="action">→ Enhanced Scrutiny</div>
+                </div>
+                <div class="score-band high-risk">
+                    <div class="range">0-49.99</div>
+                    <div class="label">High Risk</div>
+                    <div class="action">→ Auto-Deny</div>
+                </div>
+            </div>
+
+            <h2>Weight Distribution</h2>
+            <div class="weight-chart">
+                <div class="weight-item">
+                    <span class="weight-label">Parcel Affordability</span>
+                    <div class="weight-bar-container">
+                        <div class="weight-bar" style="width: 100%; background: #ef4444;">25%</div>
+                    </div>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">Transaction History</span>
+                    <div class="weight-bar-container">
+                        <div class="weight-bar" style="width: 80%; background: #f97316;">20%</div>
+                    </div>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">Debt</span>
+                    <div class="weight-bar-container">
+                        <div class="weight-bar" style="width: 80%; background: #f59e0b;">20%</div>
+                    </div>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">Employment</span>
+                    <div class="weight-bar-container">
+                        <div class="weight-bar" style="width: 60%; background: #10b981;">15%</div>
+                    </div>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">Behavior</span>
+                    <div class="weight-bar-container">
+                        <div class="weight-bar" style="width: 40%; background: #3b82f6;">10%</div>
+                    </div>
+                </div>
+                <div class="weight-item">
+                    <span class="weight-label">Bank Stability</span>
+                    <div class="weight-bar-container">
+                        <div class="weight-bar" style="width: 40%; background: #8b5cf6;">10%</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Calculator -->
+        <section class="calculator" id="calculator">
+            <h3>Interactive Score Calculator</h3>
+            <div class="calc-grid">
+                <div class="calc-input">
+                    <label>Transaction History Score (0-100)</label>
+                    <input type="number" id="calc-trans" min="0" max="100" value="75" oninput="calculateScore()">
+                </div>
+                <div class="calc-input">
+                    <label>Parcel Affordability Score (0-100)</label>
+                    <input type="number" id="calc-afford" min="0" max="100" value="80" oninput="calculateScore()">
+                </div>
+                <div class="calc-input">
+                    <label>Debt Score (0-100)</label>
+                    <input type="number" id="calc-debt" min="0" max="100" value="70" oninput="calculateScore()">
+                </div>
+                <div class="calc-input">
+                    <label>Employment Score (0-100)</label>
+                    <input type="number" id="calc-emp" min="0" max="100" value="85" oninput="calculateScore()">
+                </div>
+                <div class="calc-input">
+                    <label>Behavior Score (0-100)</label>
+                    <input type="number" id="calc-behav" min="0" max="100" value="100" oninput="calculateScore()">
+                </div>
+                <div class="calc-input">
+                    <label>Bank Stability Score (0-100)</label>
+                    <input type="number" id="calc-bank" min="0" max="100" value="90" oninput="calculateScore()">
+                </div>
+            </div>
+            <div class="calc-result">
+                <div class="score" id="calc-score">80.50</div>
+                <div class="verdict" id="calc-verdict">Low Risk → Auto-Approve</div>
+            </div>
+        </section>
+
+        <!-- Transaction History -->
+        <section class="section" id="transaction-history">
+            <h1>1. Transaction History</h1>
+            <p><strong>Weight: 20%</strong></p>
+
+            <h2>Definition</h2>
+            <p>Measures the depth and stability of banking relationship through historical transaction data.</p>
+
+            <h3>Data Points</h3>
+            <ul>
+                <li>Number of days of transaction history</li>
+                <li>Transaction pattern consistency (alignment with bank pattern)</li>
+                <li>Main account concentration (focus on primary account vs. scattered accounts)</li>
+            </ul>
+
+            <h3>Cash-Flow Risk Contribution</h3>
+            <p>Transaction history serves as the foundation for all other metrics. Insufficient history (&lt; 120 days) creates uncertainty around income stability, spending patterns, and behavioral norms. Longer history enables better prediction of future cash flow patterns and identifies seasonal variations.</p>
+
+            <h2>Scoring Method</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Risk Level</th>
+                            <th>Days of History</th>
+                            <th>Score Range</th>
+                            <th>Weight Factor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="risk-badge high">High Risk</span></td>
+                            <td>&lt; 60 days</td>
+                            <td>0-25</td>
+                            <td>0.00x</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge elevated">Elevated Risk</span></td>
+                            <td>60-119 days</td>
+                            <td>26-50</td>
+                            <td>0.50x</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge moderate">Moderate Risk</span></td>
+                            <td>120-181 days</td>
+                            <td>51-75</td>
+                            <td>0.75x</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge low">Low Risk</span></td>
+                            <td>182+ days (6+ months)</td>
+                            <td>76-100</td>
+                            <td>1.00x</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">Calculation Formula</div>
+                <div class="collapsible-content">
+                    <pre><code>Base Score = MIN(100, (Days of History / 182) × 100)
+
+Adjustment Factors:
+- Transaction pattern consistency: +10 if aligned with bank pattern
+- Main account concentration: +10 if >80% transactions in primary account
+- Data quality flag: -20 if suspected data issues
+
+Final Score = Base Score + Adjustments (capped at 0-100)</code></pre>
+                </div>
+            </div>
+
+            <h3>Risk Thresholds & Decisioning</h3>
+            <ul>
+                <li><strong>High Risk (0-25):</strong> Auto-deny - Insufficient data for reliable cash flow assessment</li>
+                <li><strong>Elevated Risk (26-50):</strong> Requires full manual review + committee discussion if combined with ANY other moderate/elevated risk</li>
+                <li><strong>Moderate Risk (51-75):</strong> Standard review process</li>
+                <li><strong>Low Risk (76-100):</strong> Category-approved for this criterion</li>
+            </ul>
+
+            <div class="red-flags">
+                <h4>Red Flags</h4>
+                <ul>
+                    <li>History &lt; 120 days with multiple account changes</li>
+                    <li>Transaction history inconsistent with stated employment</li>
+                    <li>Suspected account switching (long periods of inactivity)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Parcel Affordability -->
+        <section class="section" id="parcel-affordability">
+            <h1>2. Parcel Affordability</h1>
+            <p><strong>Weight: 25% (HIGHEST)</strong></p>
+
+            <h2>Definition</h2>
+            <p>Measures the applicant's ability to afford loan payments based on available cash flow after essential expenses.</p>
+
+            <h3>Data Points</h3>
+            <ul>
+                <li>Minimum balance score (cushion after payments)</li>
+                <li>Collection percentage (disposable income ratio)</li>
+                <li>Secondary account affordability (additional liquidity sources)</li>
+            </ul>
+
+            <h3>Cash-Flow Risk Contribution</h3>
+            <p>This is the <strong>MOST CRITICAL</strong> cash-flow metric. It directly measures whether the applicant has sufficient monthly cash flow to service the loan without triggering overdrafts, NSF fees, or payment defaults. Poor affordability (&lt; 60%) indicates cash flow stress and high default probability.</p>
+
+            <h2>Scoring Method</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Risk Level</th>
+                            <th>Affordability %</th>
+                            <th>Score Range</th>
+                            <th>Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="risk-badge high">High Risk</span></td>
+                            <td>&lt; 50%</td>
+                            <td>0-25</td>
+                            <td>Severe cash flow deficit</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge elevated">Elevated Risk</span></td>
+                            <td>50.01-64.99%</td>
+                            <td>26-50</td>
+                            <td>Tight cash flow, high stress</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge moderate">Moderate Risk</span></td>
+                            <td>65-74.99%</td>
+                            <td>51-75</td>
+                            <td>Adequate but limited buffer</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge low">Low Risk</span></td>
+                            <td>75-100%</td>
+                            <td>76-100</td>
+                            <td>Strong cash flow cushion</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">Calculation Formula</div>
+                <div class="collapsible-content">
+                    <pre><code>Base Affordability Score = (Available Cash Flow / Required Payment) × 100
+
+Available Cash Flow = (Monthly Income - Essential Expenses - Existing Debt Payments)
+
+Adjustment Factors:
+- Secondary account with strong affordability (>75%): +15 points
+- Minimum balance consistently positive: +10 points
+- Collection percentage > 80%: +5 points
+
+Final Score = Base Score + Adjustments (capped at 0-100)</code></pre>
+                </div>
+            </div>
+
+            <div class="red-flags">
+                <h4>Red Flags</h4>
+                <ul>
+                    <li>Affordability &lt; 60% with declining income trend</li>
+                    <li>Multiple overdrafts in recent 90 days</li>
+                    <li>Minimum balance frequently negative</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Debt -->
+        <section class="section" id="debt">
+            <h1>3. Debt</h1>
+            <p><strong>Weight: 20%</strong></p>
+
+            <h2>Definition</h2>
+            <p>Evaluates existing debt obligations and their impact on available cash flow for new loan servicing.</p>
+
+            <h3>Data Points</h3>
+            <ul>
+                <li>Loans Income Score (loan debt relative to income)</li>
+                <li>Debt Payment History Score (track record of debt servicing)</li>
+                <li>Debt Saturation Score (debt payments as % of payroll)</li>
+                <li>Recent loan velocity (acceleration of borrowing)</li>
+                <li>Unpaid loans (delinquencies)</li>
+            </ul>
+
+            <h2>Composite of 4 Sub-Metrics</h2>
+
+            <div class="collapsible open">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">3A. Loans Income Score (40%)</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Loan/Income Ratio</th><th>Score</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge high">High Risk</span></td><td>&gt; 75%</td><td>0-25</td></tr>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>25.01-59.99%</td><td>26-50</td></tr>
+                                <tr><td><span class="risk-badge moderate">Moderate Risk</span></td><td>60-69.99%</td><td>51-75</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>70-100%</td><td>76-100</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">3B. Debt Payment History Score (25%)</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Payment History %</th><th>Score</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge high">High Risk</span></td><td>0-25%</td><td>0-25</td></tr>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>25.01-59.99%</td><td>26-50</td></tr>
+                                <tr><td><span class="risk-badge moderate">Moderate Risk</span></td><td>60-69.99%</td><td>51-75</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>70-100%</td><td>76-100</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">3C. Debt Saturation Score (20%)</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Repayment/Payroll</th><th>Score</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>&gt; 80%</td><td>26-50</td></tr>
+                                <tr><td><span class="risk-badge moderate">Moderate Risk</span></td><td>70-79.99%</td><td>51-75</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>&lt; 70%</td><td>76-100</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">3D. Recent Loan Velocity (15%)</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Last 30d vs Last 31-90d</th><th>Score</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>+25% or more increase</td><td>26-50</td></tr>
+                                <tr><td><span class="risk-badge moderate">Moderate Risk</span></td><td>0-24.99% increase</td><td>51-75</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>Decreasing or flat</td><td>76-100</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="red-flags">
+                <h4>Critical Adjustments & Red Flags</h4>
+                <ul>
+                    <li>3+ loans over $250 unpaid for 30+ days → Force to Elevated Risk</li>
+                    <li>Each additional loan &gt; 3 in last 30 days → -10 points</li>
+                    <li>Loan payments exceed 125% of loan income → Elevated Risk</li>
+                    <li>Recent loan velocity &gt; 25% increase</li>
+                    <li>Debt saturation &gt; 80%</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Employment -->
+        <section class="section" id="employment">
+            <h1>4. Employment</h1>
+            <p><strong>Weight: 15%</strong></p>
+
+            <h2>Definition</h2>
+            <p>Assesses income stability, consistency, and employment continuity as foundation for cash flow predictability.</p>
+
+            <h3>Data Points</h3>
+            <ul>
+                <li>Coefficient of variation (income stability)</li>
+                <li>Correlation metric (income trend direction)</li>
+                <li>Employment continuity (months employed / total months)</li>
+                <li>Recent employment (employed in last 3 months)</li>
+                <li>Payroll percentage (% of payroll deposited to connected accounts)</li>
+            </ul>
+
+            <h2>Scoring Method</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Risk Level</th>
+                            <th>Employment Score %</th>
+                            <th>Score Range</th>
+                            <th>Key Indicators</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="risk-badge high">High Risk</span></td>
+                            <td>&lt; 25%</td>
+                            <td>0-25</td>
+                            <td>Not employed or severe instability</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge elevated">Elevated Risk</span></td>
+                            <td>25-59.99%</td>
+                            <td>26-50</td>
+                            <td>Unstable income or employment gaps</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge moderate">Moderate Risk</span></td>
+                            <td>60-69.99%</td>
+                            <td>51-75</td>
+                            <td>Moderate stability with some concerns</td>
+                        </tr>
+                        <tr>
+                            <td><span class="risk-badge low">Low Risk</span></td>
+                            <td>70-100%</td>
+                            <td>76-100</td>
+                            <td>Stable, consistent employment</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">Calculation Formula</div>
+                <div class="collapsible-content">
+                    <pre><code>Base Employment Score = 100
+
+Deductions:
+- Coefficient of variation > 0.5: -30 points (high instability)
+- Coefficient of variation 0.3-0.5: -15 points (moderate instability)
+- Employment ratio < 50%: -25 points
+- NOT employed in last 3 months: -40 points (critical red flag)
+- Payroll capture < 85%: -20 points
+
+Bonuses:
+- Employed in last 3 months: +10 points
+- Employment ratio > 90%: +10 points
+- Correlation trending positive: +5 points
+
+Final Score = Base Score - Deductions + Bonuses (capped at 0-100)</code></pre>
+                </div>
+            </div>
+
+            <div class="red-flags">
+                <h4>Red Flags</h4>
+                <ul>
+                    <li>Not employed in last 3 months</li>
+                    <li>Income coefficient of variation &gt; 0.5</li>
+                    <li>Less than 50% of income from employment</li>
+                    <li>Payroll capture &lt; 70%</li>
+                    <li>Declining income trend (negative correlation)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Behavior -->
+        <section class="section" id="behavior">
+            <h1>5. Behavior</h1>
+            <p><strong>Weight: 10%</strong></p>
+
+            <h2>Definition</h2>
+            <p>Evaluates financial conduct, responsibility, and red-flag behaviors that indicate elevated default risk regardless of cash flow adequacy.</p>
+
+            <h3>Data Points</h3>
+            <ul>
+                <li>Derogatory transactions (ACH returns, payment reversals, NSF fees on loans)</li>
+                <li>Stop payments (active blocking of creditor payments)</li>
+                <li>Gambling transactions (as % of consistent income)</li>
+                <li>Periods of inactivity (account switching behavior)</li>
+                <li>Unsupported income ratio (unexplained cash sources)</li>
+            </ul>
+
+            <h2>Composite of 5 Sub-Metrics</h2>
+
+            <div class="collapsible open">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">5A. Derogatory Transactions (35%)</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Frequency (90 days)</th><th>Score</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>3+ ACH returns OR 5+ any derogatory</td><td>26-50</td></tr>
+                                <tr><td><span class="risk-badge moderate">Moderate Risk</span></td><td>2 ACH returns OR 3+ in 500 days</td><td>51-75</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>0-1 incidents</td><td>76-100</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">5B. Stop Payments (30%) - CRITICAL</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Stop Payments</th><th>Score</th><th>Action</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge high">High Risk</span></td><td>1+ in 90 days OR 2+ in 500 days</td><td>0-25</td><td><strong>AUTO-DENY</strong></td></tr>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>1 in 500 days</td><td>26-50</td><td>Manual review</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>None</td><td>76-100</td><td>Approved</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">5C. Gambling (20%) - CRITICAL</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Gambling % of Income</th><th>Score</th><th>Action</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge high">High Risk</span></td><td>&gt; 50%</td><td>0-25</td><td><strong>AUTO-DENY</strong></td></tr>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>30-49.99%</td><td>26-50</td><td>Manual review</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>&lt; 30%</td><td>76-100</td><td>Approved</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="red-flags">
+                <h4>Critical Behavioral Disqualifiers</h4>
+                <ul>
+                    <li><strong>ANY stop payments in 90 days</strong> → Immediate denial</li>
+                    <li><strong>Gambling &gt; 50% of income</strong> → Immediate denial</li>
+                    <li>3+ derogatory transactions with loan companies in 90 days → Elevated to manual review</li>
+                    <li>NSF fees on loan payments → Strong negative signal</li>
+                </ul>
+                <p><strong>Note:</strong> Behavioral metrics can override positive cash flow metrics. A borrower with adequate income but chronic stop payments should be denied.</p>
+            </div>
+        </section>
+
+        <!-- Bank Account Stability -->
+        <section class="section" id="bank-stability">
+            <h1>6. Bank Account Stability</h1>
+            <p><strong>Weight: 10%</strong></p>
+
+            <h2>Definition</h2>
+            <p>Measures consistency and health of banking relationships, account management, and potential flight risk.</p>
+
+            <h3>Data Points</h3>
+            <ul>
+                <li>Account abandonment (negative balance + inactivity)</li>
+                <li>Payment account changes (payroll allocation switches)</li>
+                <li>Account negative with inactivity (overdraft + no deposits)</li>
+                <li>Closed bank accounts (relationship terminations)</li>
+            </ul>
+
+            <h2>Composite of 4 Sub-Metrics</h2>
+
+            <div class="collapsible open">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">6B. Payment Account Changes (30%) - CRITICAL</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Changes</th><th>Score</th><th>Action</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge high">High Risk</span></td><td>3+ in 90 days OR 6+ in 365 days</td><td>0-25</td><td><strong>AUTO-DENY</strong></td></tr>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>2 in 90 days OR 3-5 in 365 days</td><td>26-50</td><td>Manual review</td></tr>
+                                <tr><td><span class="risk-badge moderate">Moderate Risk</span></td><td>1 in 90 days</td><td>51-75</td><td>Standard review</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>No changes</td><td>76-100</td><td>Approved</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">6C. Account Negative with Inactivity (25%)</div>
+                <div class="collapsible-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Risk Level</th><th>Negative Days + Amount</th><th>Score</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><span class="risk-badge high">High Risk</span></td><td>7+ days negative &gt;$1K or &gt;40% payroll + NO income &gt;$50</td><td>0-25</td></tr>
+                                <tr><td><span class="risk-badge elevated">Elevated Risk</span></td><td>7+ days negative 20-39% payroll + inactive</td><td>26-50</td></tr>
+                                <tr><td><span class="risk-badge moderate">Moderate Risk</span></td><td>7+ days negative 20-39% payroll (with activity)</td><td>51-75</td></tr>
+                                <tr><td><span class="risk-badge low">Low Risk</span></td><td>No extended negative periods</td><td>76-100</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="red-flags">
+                <h4>Red Flags</h4>
+                <ul>
+                    <li>3+ payroll changes in 90 days (possible fraud or evasion)</li>
+                    <li>Main account negative &gt;$1K for 7+ days with no income</li>
+                    <li>Multiple abandoned accounts (balance left negative)</li>
+                    <li>Closed main account in last 365 days</li>
+                </ul>
+                <p><strong>Critical Rule:</strong> If ALL Bank Stability indicators are Elevated Risk → Escalate to High Risk and auto-deny.</p>
+            </div>
+        </section>
+
+        <!-- Composite Score -->
+        <section class="section" id="composite-score">
+            <h1>Composite Risk Score Calculation</h1>
+
+            <h2>Overall Score Formula</h2>
+            <pre><code>COMPOSITE SCORE = (Transaction History × 0.20) +
+                  (Parcel Affordability × 0.25) +
+                  (Debt × 0.20) +
+                  (Employment × 0.15) +
+                  (Behavior × 0.10) +
+                  (Bank Account Stability × 0.10)
+
+Score Range: 0-100 (where higher = lower risk)</code></pre>
+
+            <h2>Weight Justification</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Criterion</th>
+                            <th>Weight</th>
+                            <th>Justification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Parcel Affordability</strong></td>
+                            <td>25%</td>
+                            <td>Direct measure of ability to afford payment; most predictive of default</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Transaction History</strong></td>
+                            <td>20%</td>
+                            <td>Foundation metric; more history = more reliable other metrics</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Debt</strong></td>
+                            <td>20%</td>
+                            <td>Existing obligations directly impact available cash flow</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Employment</strong></td>
+                            <td>15%</td>
+                            <td>Income stability; less weight because temporary instability can be mitigated</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Behavior</strong></td>
+                            <td>10%</td>
+                            <td>Powerful override metric but less common</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Bank Stability</strong></td>
+                            <td>10%</td>
+                            <td>Indicates flight risk; lower weight because can be situational</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Decision Rules -->
+        <section class="section" id="decision-rules">
+            <h1>Decision Rules & Thresholds</h1>
+
+            <h2>Automated Decisioning Framework</h2>
+
+            <div class="collapsible open">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">TIER 1: AUTO-DENY (Score 0-49.99)</div>
+                <div class="collapsible-content">
+                    <h4>Any Single "High Risk" Indicator:</h4>
+                    <ul>
+                        <li>Transaction History &lt; 60 days</li>
+                        <li>Parcel Affordability &lt; 50%</li>
+                        <li>Debt Payment History &lt; 25%</li>
+                        <li>Employment not in last 3 months</li>
+                        <li>Stop payments in last 90 days</li>
+                        <li>Gambling &gt; 50% of income</li>
+                        <li>3+ payroll changes in 90 days OR 6+ in 365 days</li>
+                        <li>Account negative &gt;$1K for 7+ days + inactive</li>
+                    </ul>
+                    <h4>Specific Rule Combinations:</h4>
+                    <ul>
+                        <li>2+ Elevated Risk in Debt category</li>
+                        <li>All Bank Stability indicators Elevated Risk</li>
+                        <li>Any Behavior metric = High Risk</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">TIER 2: MANUAL REVIEW - ELEVATED SCRUTINY (Score 50-59.99)</div>
+                <div class="collapsible-content">
+                    <h4>Elevated Risk + Compensating Factors Needed:</h4>
+                    <ul>
+                        <li>Transaction History 60-119 days (require strong other metrics)</li>
+                        <li>Parcel Affordability 50-64.99% (require low debt + stable employment)</li>
+                        <li>1 Elevated + 2 Moderate in Debt</li>
+                        <li>Employment 25-59.99% (require strong affordability + low debt)</li>
+                    </ul>
+                    <p><strong>Process:</strong> Underwriter review required, must document compensating factors, committee approval for Elevated Transaction History combinations.</p>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">TIER 3: MANUAL REVIEW - STANDARD (Score 60-69.99)</div>
+                <div class="collapsible-content">
+                    <h4>Profile Characteristics:</h4>
+                    <ul>
+                        <li>Moderate Risk or better on all scores (max 1 elevated)</li>
+                        <li>1 Key area Elevated + 3 Moderate (borderline case)</li>
+                        <li>New banking relationships with otherwise strong profile</li>
+                    </ul>
+                    <p><strong>Process:</strong> Standard underwriter review, may approve with standard monitoring.</p>
+                </div>
+            </div>
+
+            <div class="collapsible">
+                <div class="collapsible-header" onclick="toggleCollapsible(this)">TIER 4: AUTO-APPROVE (Score 70-100)</div>
+                <div class="collapsible-content">
+                    <h4>Required Conditions (ALL must be met):</h4>
+                    <ul>
+                        <li>No High Risk indicators</li>
+                        <li>Maximum of 1 Moderate Risk indicator</li>
+                        <li>All others Low Risk</li>
+                        <li>Parcel Affordability ≥ 70%</li>
+                        <li>Transaction History ≥ 120 days</li>
+                    </ul>
+                    <h4>Ideal Profile - Category Approved:</h4>
+                    <ul>
+                        <li>All 6 criteria = Low Risk (76-100 on each)</li>
+                        <li>Transaction History ≥ 182 days</li>
+                        <li>Parcel Affordability ≥ 75%</li>
+                        <li>Clean behavior (no derogatory marks)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2>Special Override Rules</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Rule</th><th>Condition</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Rule 1</td><td>ANY Key Area = High Risk (0-25)</td><td>Auto-Deny</td></tr>
+                        <tr><td>Rule 2</td><td>2 Key Areas = Elevated Risk</td><td>Deny</td></tr>
+                        <tr><td>Rule 3</td><td>2 Elevated categories within Debt</td><td>Force Debt to High Risk → Deny</td></tr>
+                        <tr><td>Rule 4</td><td>ANY High Risk behavior metric</td><td>Immediate Deny</td></tr>
+                        <tr><td>Rule 5</td><td>ALL Bank Stability = Elevated Risk</td><td>Force to High Risk → Deny</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Resubmission -->
+        <section class="section" id="resubmission">
+            <h1>Resubmission Protocol</h1>
+
+            <h2>Automated Resubmission with Account Reconnection</h2>
+            <p><strong>Trigger:</strong> User denied due to insufficient account data</p>
+            <ol>
+                <li>User auto-receives custom message: "Please connect missing bank account for re-evaluation"</li>
+                <li>Upon connection:
+                    <ul>
+                        <li>All scores recalculated automatically</li>
+                        <li>Parcel affordability recalculated across ALL accounts</li>
+                        <li>If all scores ≥ Moderate Risk (60+) → Auto-approve</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h2>Manual Resubmission Scenarios</h2>
+
+            <div class="pattern-card">
+                <h4>Scenario 1: High Risk + New Account Indicator</h4>
+                <p><strong>Conditions:</strong> High/Elevated Transaction History, clear "New Account Deposit" indicator, only 1 account connected</p>
+                <p><strong>Action:</strong> Recalculate and potentially approve if second account demonstrates stability</p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Scenario 2: Elevated Transaction History + Other Strengths</h4>
+                <p><strong>Conditions:</strong> Elevated Risk Transaction History, Moderate+ on all other categories, 15% of paystub or transfers</p>
+                <p><strong>Action:</strong> Approve with monitoring</p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Scenario 3: Employment Category Issues</h4>
+                <p><strong>Conditions:</strong> Employment showing elevated risk due to data categorization (income not labeled "payroll" but matches paystub ≥85%)</p>
+                <p><strong>Action:</strong> Approve - this is a data categorization issue, not true risk</p>
+            </div>
+        </section>
+
+        <!-- Key Insights -->
+        <section class="section" id="insights">
+            <h1>Key Insights & Pattern Analysis</h1>
+
+            <h2>Critical Findings</h2>
+
+            <div class="pattern-card">
+                <h4>1. Parcel Affordability is King</h4>
+                <ul>
+                    <li>Below 60% is the strongest predictor of default</li>
+                    <li>75% threshold represents the "safety zone"</li>
+                    <li>Users with 50-65% affordability struggle even with clean credit</li>
+                </ul>
+            </div>
+
+            <div class="pattern-card">
+                <h4>2. Transaction History Provides Foundation</h4>
+                <ul>
+                    <li>Less than 120 days = unreliable data for all other metrics</li>
+                    <li>182-day threshold enables seasonal pattern detection</li>
+                </ul>
+            </div>
+
+            <div class="pattern-card">
+                <h4>3. Debt Complexity Requires Multi-Metric Approach</h4>
+                <ul>
+                    <li>Recent loan acceleration (+25% in 30 days) is RED FLAG</li>
+                    <li>Multiple lenders simultaneously = 5x default rate</li>
+                </ul>
+            </div>
+
+            <div class="pattern-card">
+                <h4>4. Behavioral Red Flags Override Cash Flow</h4>
+                <ul>
+                    <li>Stop payments = intentional non-payment → Always deny</li>
+                    <li>Gambling &gt;50% = cash flow diversion → Always deny</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Patterns -->
+        <section class="section" id="patterns">
+            <h1>Red Flag Patterns</h1>
+
+            <div class="pattern-card">
+                <h4>Pattern 1: The "Desperate Borrower"</h4>
+                <p><strong>Profile:</strong> Recent loan velocity +25%, Multiple new loans (3+ in 30 days), Parcel affordability 50-65%</p>
+                <p><strong>Interpretation:</strong> Using loans to cover living expenses, entering debt spiral</p>
+                <p><strong>Action:</strong> <span class="risk-badge high">DENY</span> - high likelihood of default within 60 days</p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Pattern 2: The "Account Hopper"</h4>
+                <p><strong>Profile:</strong> 2+ payroll changes in 90 days, Abandoned negative account(s), Transaction gaps</p>
+                <p><strong>Interpretation:</strong> Possible collection evasion; may be fleeing creditors</p>
+                <p><strong>Action:</strong> <span class="risk-badge high">DENY</span> - enhanced verification required</p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Pattern 3: The "Data Quality Issue"</h4>
+                <p><strong>Profile:</strong> Elevated employment risk BUT income matches paystub ≥85%, Employed in last 3 months</p>
+                <p><strong>Interpretation:</strong> System categorization error, not true risk</p>
+                <p><strong>Action:</strong> <span class="risk-badge low">APPROVE</span> - if other metrics strong</p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Pattern 4: The "New Banking Relationship"</h4>
+                <p><strong>Profile:</strong> Transaction History 60-119 days, Clear "New Account Deposit", Otherwise clean metrics</p>
+                <p><strong>Interpretation:</strong> Legitimate new banking relationship</p>
+                <p><strong>Action:</strong> Request additional account; auto-resubmit</p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Pattern 5: The "Intentional Defaulter"</h4>
+                <p><strong>Profile:</strong> Stop payments in last 90 days, May have adequate income/affordability</p>
+                <p><strong>Interpretation:</strong> Willful non-payment; character issue not capacity</p>
+                <p><strong>Action:</strong> <span class="risk-badge high">ALWAYS DENY</span> - behavioral disqualification</p>
+            </div>
+        </section>
+
+        <!-- Recommendations -->
+        <section class="section" id="recommendations">
+            <h1>Implementation Roadmap</h1>
+
+            <div class="phase">
+                <div class="phase-header">
+                    <span class="phase-title">Phase 1: Standardize Scoring</span>
+                    <span class="phase-priority high">HIGH PRIORITY</span>
+                </div>
+                <p>0-30 days</p>
+                <ul>
+                    <li>Implement 0-100 standardized score across all 6 criteria</li>
+                    <li>Codify the weight distribution</li>
+                    <li>Deploy hard stops for critical thresholds</li>
+                </ul>
+                <p><strong>Impact:</strong> Reduce manual review volume by 40%</p>
+            </div>
+
+            <div class="phase">
+                <div class="phase-header">
+                    <span class="phase-title">Phase 2: Refine Main Account Detection</span>
+                    <span class="phase-priority high">HIGH PRIORITY</span>
+                </div>
+                <p>30-60 days</p>
+                <ul>
+                    <li>Define "Main Account" algorithmically</li>
+                    <li>Implement secondary account uplift</li>
+                    <li>Flag suspected account switching</li>
+                </ul>
+                <p><strong>Impact:</strong> Improve affordability accuracy by 25%</p>
+            </div>
+
+            <div class="phase">
+                <div class="phase-header">
+                    <span class="phase-title">Phase 3: Data Quality Checks</span>
+                    <span class="phase-priority medium">MEDIUM-HIGH</span>
+                </div>
+                <p>30-60 days</p>
+                <ul>
+                    <li>Pre-decisioning data validation</li>
+                    <li>Benefits reclassification as payroll-equivalent</li>
+                    <li>Unusual bank detection</li>
+                </ul>
+                <p><strong>Impact:</strong> Reduce false denials by 15%</p>
+            </div>
+
+            <div class="phase">
+                <div class="phase-header">
+                    <span class="phase-title">Phase 4: Enhanced Debt Differentiation</span>
+                    <span class="phase-priority medium">MEDIUM</span>
+                </div>
+                <p>60-90 days</p>
+                <ul>
+                    <li>Separate debt categories (payday vs personal loans)</li>
+                    <li>Adjust loan velocity calculation</li>
+                    <li>Implement lender exception list</li>
+                </ul>
+            </div>
+
+            <div class="phase">
+                <div class="phase-header">
+                    <span class="phase-title">Phase 5: Automated Resubmission Engine</span>
+                    <span class="phase-priority medium">MEDIUM</span>
+                </div>
+                <p>90-120 days</p>
+                <ul>
+                    <li>Trigger-based auto-resubmission</li>
+                    <li>Smart missing data detection</li>
+                    <li>30-day check-in for borderline denials</li>
+                </ul>
+                <p><strong>Impact:</strong> Capture 10-15% of previously denied applicants</p>
+            </div>
+
+            <div class="phase">
+                <div class="phase-header">
+                    <span class="phase-title">Phase 6: Continuous Model Monitoring</span>
+                    <span class="phase-priority high">HIGH PRIORITY</span>
+                </div>
+                <p>Ongoing</p>
+                <ul>
+                    <li>Monthly cohort analysis</li>
+                    <li>Metric performance tracking</li>
+                    <li>A/B testing framework</li>
+                </ul>
+            </div>
+
+            <h2>Key Performance Indicators</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Metric</th><th>Target</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Default Rate (70-100 band)</td><td>&lt;5% (Target: 3%)</td></tr>
+                        <tr><td>Default Rate (60-69.99 band)</td><td>8-12%</td></tr>
+                        <tr><td>Auto-Approval Rate</td><td>50-60%</td></tr>
+                        <tr><td>False Positive Rate</td><td>&lt;10%</td></tr>
+                        <tr><td>Manual Review Reduction</td><td>40% within 90 days</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Examples -->
+        <section class="section" id="examples">
+            <h1>Scoring Calculation Examples</h1>
+
+            <div class="pattern-card">
+                <h4>Example 1: Strong Applicant - AUTO-APPROVE</h4>
+                <ul>
+                    <li>Transaction History: 250 days = 100 score</li>
+                    <li>Parcel Affordability: 82% = 95 score</li>
+                    <li>Debt: Low = 90 score</li>
+                    <li>Employment: Stable = 88 score</li>
+                    <li>Behavior: Clean = 100 score</li>
+                    <li>Bank Stability: Clean = 100 score</li>
+                </ul>
+                <pre><code>(100 × 0.20) + (95 × 0.25) + (90 × 0.20) + (88 × 0.15) + (100 × 0.10) + (100 × 0.10)
+= 20 + 23.75 + 18 + 13.2 + 10 + 10 = 94.95</code></pre>
+                <p><strong>Result:</strong> <span class="risk-badge low">AUTO-APPROVE</span></p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Example 4: AUTO-DENY - Behavioral Disqualification</h4>
+                <ul>
+                    <li>Transaction History: 200 days = 100 score</li>
+                    <li>Parcel Affordability: 75% = 90 score</li>
+                    <li>Debt: Low = 85 score</li>
+                    <li>Employment: Stable = 90 score</li>
+                    <li><strong>Behavior: 1 stop payment = 0 score (HIGH RISK)</strong></li>
+                    <li>Bank Stability: Clean = 100 score</li>
+                </ul>
+                <pre><code>Composite Score = 83
+BUT: Stop Payment = HIGH RISK behavior metric</code></pre>
+                <p><strong>Result:</strong> <span class="risk-badge high">AUTO-DENY</span> - Behavioral disqualification overrides positive score</p>
+            </div>
+
+            <div class="pattern-card">
+                <h4>Example 5: AUTO-DENY - Affordability Insufficient</h4>
+                <ul>
+                    <li>Transaction History: 180 days = 95 score</li>
+                    <li><strong>Parcel Affordability: 45% = 20 score (HIGH RISK)</strong></li>
+                    <li>Debt: Moderate = 70 score</li>
+                    <li>Employment: Good = 82 score</li>
+                    <li>Behavior: Clean = 100 score</li>
+                    <li>Bank Stability: Clean = 100 score</li>
+                </ul>
+                <pre><code>Composite Score = 70.3
+BUT: Parcel Affordability = HIGH RISK (percentage <50%)</code></pre>
+                <p><strong>Result:</strong> <span class="risk-badge high">AUTO-DENY</span> - "Insufficient cash flow to afford loan payment"</p>
+            </div>
+        </section>
+
+        <!-- Conclusion -->
+        <section class="section" id="conclusion">
+            <h1>Conclusion</h1>
+
+            <p>This cash-flow risk assessment model provides a comprehensive, data-driven framework for credit evaluation at MyBambu. The model enables:</p>
+
+            <ul class="check-list">
+                <li><strong>Automated decisioning</strong> for 60-70% of applications</li>
+                <li><strong>Consistent, fair evaluation</strong> across all applicants</li>
+                <li><strong>Clear denial reasons</strong> mapped to specific failed criteria</li>
+                <li><strong>Actionable resubmission paths</strong> for borderline cases</li>
+                <li><strong>Risk-calibrated approval</strong> bands with predictable default rates</li>
+            </ul>
+
+            <h2>Critical Success Factors</h2>
+            <ol>
+                <li>Parcel Affordability drives the model (25% weight) - most predictive metric</li>
+                <li>Behavioral red flags override positive cash flow - character matters</li>
+                <li>Transaction history length enables reliable assessment of all other metrics</li>
+                <li>Composite scoring prevents single-metric bias</li>
+                <li>Hard stops for critical thresholds protect portfolio quality</li>
+            </ol>
+
+            <p>The model balances <strong>access</strong> (capturing creditworthy applicants) with <strong>risk management</strong> (protecting against default), aligned with MyBambu's mission to serve the unbanked/underbanked population responsibly.</p>
+
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--border); color: var(--text-light); font-size: 0.9rem;">
+                <p><strong>Model Version:</strong> 1.0</p>
+                <p><strong>Date:</strong> November 2025</p>
+                <p><strong>Methodology:</strong> Cash-Flow Risk Assessment with Multi-Criteria Decision Analysis</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Calculate composite score
+        function calculateScore() {
+            const trans = parseFloat(document.getElementById('calc-trans').value) || 0;
+            const afford = parseFloat(document.getElementById('calc-afford').value) || 0;
+            const debt = parseFloat(document.getElementById('calc-debt').value) || 0;
+            const emp = parseFloat(document.getElementById('calc-emp').value) || 0;
+            const behav = parseFloat(document.getElementById('calc-behav').value) || 0;
+            const bank = parseFloat(document.getElementById('calc-bank').value) || 0;
+
+            const score = (trans * 0.20) + (afford * 0.25) + (debt * 0.20) +
+                         (emp * 0.15) + (behav * 0.10) + (bank * 0.10);
+
+            document.getElementById('calc-score').textContent = score.toFixed(2);
+
+            let verdict, color;
+            if (score >= 70) {
+                verdict = 'Low Risk → Auto-Approve';
+                color = '#10b981';
+            } else if (score >= 60) {
+                verdict = 'Moderate Risk → Manual Review';
+                color = '#f59e0b';
+            } else if (score >= 50) {
+                verdict = 'Elevated Risk → Enhanced Scrutiny';
+                color = '#f97316';
+            } else {
+                verdict = 'High Risk → Auto-Deny';
+                color = '#ef4444';
+            }
+
+            // Check for any high risk indicators
+            const inputs = [trans, afford, debt, emp, behav, bank];
+            if (inputs.some(v => v <= 25)) {
+                verdict = 'HIGH RISK INDICATOR → Auto-Deny';
+                color = '#ef4444';
+            }
+
+            document.getElementById('calc-verdict').textContent = verdict;
+            document.getElementById('calc-score').style.color = color;
+        }
+
+        // Toggle collapsible sections
+        function toggleCollapsible(header) {
+            const parent = header.parentElement;
+            parent.classList.toggle('open');
+        }
+
+        // Toggle mobile sidebar
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // Highlight active nav link on scroll
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Close sidebar when clicking a link on mobile
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('open');
+                }
+            });
+        });
+
+        // Initialize calculator
+        calculateScore();
+    </script>
+</body>
+</html>
